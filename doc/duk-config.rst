@@ -17,9 +17,7 @@ require changes to "prepared" Duktape source code.  The ``configure.py``
 utility combines the preparation of a ``duk_config.h`` header and Duktape
 source files; it accepts the same command line options as genconfig.py (and
 more).  **Since Duktape 2.0 ``tools/configure.py`` is the recommended tool to
-create both a config header and prepared Duktape sources for build**.  This
-document describes genconfig.py usage but you should normally use configure.py
-wherever genconfig.py is used.
+create both a config header and prepared Duktape sources for build**.
 
 The ``DUK_VERSION`` define is available for duk_config.h, so that application
 configuration snippets can react to Duktape version if necessary (e.g. enable
@@ -52,7 +50,7 @@ The basic options are:
   using one of the supported platform and default options are acceptable, this
   should be your default choice.  Note that ``DUK_OPT_xxx`` compiler command
   line options are no longer supported in Duktape 2.x; to use non-default
-  options, run either configure.py (recommended) or genconfig.py.
+  options, run ``configure.py``.
 
 * **Use default duk_config.h with manual modifications**:
   You can modify the default duk_config.h directly if only a small change
@@ -61,22 +59,22 @@ The basic options are:
   source duk_config.h changes (which is usual for new versions).  See separate
   section below on how to tweak a header using a script.
 
-* **Use genconfig.py to create an autodetect duk_config.h**:
-  You can use ``genconfig.py`` to create a custom autodetecting duk_config.h
-  and specify config option overrides on genconfig command line.  See separate
-  section below on how to use genconfig.
+* **Use configure.py to create an autodetect duk_config.h**:
+  You can use ``configure.py`` to create a custom autodetecting duk_config.h
+  and specify config option overrides on configure.py command line.  See
+  separate section below on how to use configure.py.
 
-* **Use genconfig.py to create a barebones duk_config.h**:
+* **Use configure.py to create a barebones duk_config.h**:
   While the autodetect duk_config.h is convenient, it won't work on exotic
-  platforms.  To support exotic platforms, ``genconfig.py`` can generate a
+  platforms.  To support exotic platforms, ``configure.py`` can generate a
   template duk_config.h for a specified platform, compiler, and architecture
   combination (each can be either specified or left as "autodetect") which
   should match your target as closely as possible.  You can then modify the
   header manually or through scripting.
 
-* **Edit the genconfig metadata and regenerate duk_config.h**:
+* **Edit the configure.py metadata and regenerate duk_config.h**:
   You can also add support for your custom platform directly into the
-  genconfig metadata.  For example, to support a custom compiler, you'll
+  ``configure.py`` metadata.  For example, to support a custom compiler, you'll
   need to add a compiler-specific C header snippets to detect the compiler
   and to override default macros which are inappropriate for that compiler.
   The ``duk_config.h`` can then be regenerated using updated metadata.
@@ -84,19 +82,19 @@ The basic options are:
 * **Write a duk_config.h from scratch**:
   You could also write a duk_config.h from scratch, but because there are
   quite many typedefs, macros, and config options, it's probably easiest
-  to modify the default or genconfig-generated ``duk_config.h``.
+  to modify the default or configure.py-generated ``duk_config.h``.
 
 NOTE: While you can run ``genconfig.py`` directly, it's recommended to use
 ``tools/configure.py`` instead.  The same configuration options (and more)
 are accepted by configure.py.
 
-Using genconfig
-===============
+Using configure.py
+==================
 
-Overview of genconfig
----------------------
+Overview of configure.py
+------------------------
 
-Genconfig (``tools/genconfig.py``) is a small utility for config handling
+Genconfig (``tools/configure.py``) is a small utility for config handling
 with two basic purposes:
 
 * Generate a ``duk_config.h`` for a specified platform, compiler, and
@@ -115,22 +113,13 @@ Metadata is expressed as YAML files for easy editing and good diff/merge
 behavior.
 
 This document doesn't cover all available tool options; use
-``python tools/genconfig.py --help`` or ``python tools/configure.py --help``
+``python tools/configure.py --help`` or ``python tools/genconfig.py --help``
 for a full list of current options.
 
 Generating an autodetect duk_config.h
 -------------------------------------
 
 To generate an autodetect header suitable for directly supported platforms::
-
-    $ cd duktape-2.0.0
-    $ python tools/genconfig.py \
-        --metadata config/ \
-        --output /tmp/duk_config.h \
-        duk-config-header
-
-The resulting header in ``/tmp/duk_config.h`` can then either be used as is
-or edited manually or through scripting.  The equivalent operation using
 ``tools/configure.py`` is::
 
     $ cd duktape-2.0.0
@@ -139,8 +128,21 @@ or edited manually or through scripting.  The equivalent operation using
         --config-metadata config/ \
         --output-directory /tmp/output
 
-The result directory ``/tmp/output`` contains a ``duk_config.h`` header
-but also ``duktape.c`` and ``duktape.h`` to be included in your build.
+
+The resulting header in ``/tmp/output/duk_config.h`` can then either be used as
+is or edited manually or through scripting. The directory ``/tmp/output`` will
+also contain ``duktape.c`` and ``duktape.h`` to be included in your build.
+
+The equivalent operation using ``getconfig.py``::
+
+    $ cd duktape-2.0.0
+    $ python tools/genconfig.py \
+        --metadata config/ \
+        --output /tmp/duk_config.h \
+        duk-config-header
+
+The config header is ``/tmp/duk_config.h``. ``duktape.c`` or ``duktape.h`` will
+not be generated via ``genconfig.py``.
 
 You can override individual defines using in several ways (see "Option
 overrides" section below for more details): C compiler format (-D and -U
@@ -148,19 +150,19 @@ options) and YAML config through a file or inline.
 
 If you're building Duktape as a DLL, you should use the ``--dll`` option::
 
-    $ python tools/genconfig.py \
-        --metadata config/ \
-        --dll \
-        --output /tmp/duk_config.h \
-        duk-config-header
-
-The ``configure.py`` equivalent::
-
     $ python tools/configure.py \
         --source-directory src-input \
         --config-metadata config/ \
         --output-directory /tmp/output \
         --dll
+
+The ``genconfig.py`` equivalent::
+
+    $ python tools/genconfig.py \
+        --metadata config/ \
+        --dll \
+        --output /tmp/duk_config.h \
+        duk-config-header
 
 DLL builds cannot be detected automatically and they affect symbol visibility
 attributes on Windows.  The ``-dll`` option creates a header which assumes
@@ -174,18 +176,17 @@ Generating a barebones duk_config.h
 -----------------------------------
 
 To generate a barebones header you need to specify a platform, compiler, and
-architecture for genconfig::
+architecture for configure.py::
 
-    $ python tools/genconfig.py \
-        --metadata config/ \
+    $ python tools/configure.py \
+        --config-metadata config/ \
         --platform linux \
         --compiler gcc \
         --architecture x64 \
-        --output /tmp/duk_config.h \
-        duk-config-header
+        --output-directory /tmp/output
 
-The barebones header in ``/tmp/duk_config.h`` can then either be used as is
-or edited manually or through scripting.
+The barebones header in ``/tmp/output/duk_config.h`` can then either be used as
+is, edited manually, or through scripting.
 
 The platform, compiler, and architecture names map to genconfig header snippet
 files.  Duktape config options will be assigned their default values specified
@@ -199,8 +200,8 @@ Some changes such as reworking ``#include`` statements cannot be represented
 as override files; you'll need to edit the resulting config header manually
 or using some scripting approach.
 
-Genconfig option overrides
-==========================
+configure.py option overrides
+=============================
 
 Genconfig provides multiple ways of overriding config options when generating
 an autodetect or barebones ``duk_config.h`` header:
@@ -238,16 +239,15 @@ file, and a few options are then tweaked using the C compiler format.  An
 autodetect header is then generated::
 
     $ cd duktape
-    $ python tools/genconfig.py \
-        --metadata config/ \
+    $ python tools/configure.py \
+        --config-metadata config/ \
         --option-file low_memory.yaml \
         -DDUK_USE_TRACEBACK_DEPTH=100 \
         -UDUK_USE_JX -UDUK_USE_JC \
-        --output /tmp/duk_config.h \
-        duk-config-header
+        --output-directory /tmp/output
 
-YAML config
------------
+YAML config file
+----------------
 
 A YAML config file allows options to be specified in a structured,
 programmatic manner.  An example YAML config file, ``my_config.yaml``
@@ -263,8 +263,8 @@ This file, another override file, and a few inline YAML forced options
 could be used as follows to generate a barebones header::
 
     $ cd duktape
-    $ python tools/genconfig.py \
-        --metadata config/ \
+    $ python tools/configure.py \
+        --config-metadata config/ \
         --platform linux \
         --compiler gcc \
         --architecture x64 \
@@ -272,8 +272,7 @@ could be used as follows to generate a barebones header::
         --option-file more_overrides.yaml \
         --option-yaml 'DUK_USE_JX: false' \
         --option-yaml 'DUK_USE_JC: false' \
-        --output /tmp/duk_config.h \
-        duk-config-header
+        --output-directory /tmp/output
 
 For inline YAML, multiple forced options can be given either by using a YAML
 value with multiple keys, or by using multiple options::
@@ -347,15 +346,14 @@ sanity checks (if enabled).
 
 For example, to generate a barebones header with two fixup headers::
 
-    $ python tools/genconfig.py \
-        --metadata config/ \
+    $ python tools/configure.py \
+        --config-metadata config/ \
         --platform linux \
         --compiler gcc \
         --architecture x64 \
         --fixup-file my_env_strings.h \
         --fixup-file my_no_json_fastpath.h \
-        --output /tmp/duk_config.h \
-        duk-config-header
+        --output-directory /tmp/output
 
 The ``my_env_strings.h`` fixup header could be::
 
@@ -480,15 +478,15 @@ simply append additional preprocessor directives to undefine/redefine options
 as necessary.  This is much easier to maintain in version updates than when
 modifications are made in-place.
 
-Genconfig has a direct option to append "fixups" after the main generated
+configure.py has a direct option to append "fixups" after the main generated
 header::
 
     # my_custom.h is applied after generated header; functionally similar
     # to Duktape 1.2.x duk_custom.h
 
-    $ python tools/genconfig.py [...] --fixup-file my_custom.h [...]
+    $ python tools/configure.py [...] --fixup-file my_custom.h [...]
 
-A genconfig-generated barebones header also has the following line near the end
+A configure.py-generated barebones header also has the following line near the end
 for detecting where to add override defines; this is easy to detect reliably::
 
     /* __OVERRIDE_DEFINES__ */
